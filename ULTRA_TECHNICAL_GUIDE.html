@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ULTRA TECHNICAL GUIDE</title>
+    <link rel="stylesheet" href="miracle.css" />
+    <style>
+      body {
+        line-height: 1.7;
+        font-size: 13px;
+      }
+      p,
+      li {
+        margin-bottom: 6px;
+      }
+      pre,
+      code {
+        line-height: 1.6;
+        padding: 6px 10px;
+      }
+    </style>
+  </head>
+  <body class="ULTRA">
+    <main>
+      <header>
+        <h1>ULTRA TECHNICAL GUIDE</h1>
+        <p>
+          TECHNICAL_GUIDE.md を読みやすく整理し直した HTML 版です。<br />
+          フロント／バックエンド／インフラの設計を、実際の操作やコマンドの流れと合わせて理解できます。
+        </p>
+      </header>
+
+      <section class="hero">
+        <h2>How to Use</h2>
+        <ul>
+          <li>基礎 → フロント → バックエンド → 認証 → DB → 決済 → 検索/通知/リアルタイム → デプロイ の順に読むと流れが掴めます。</li>
+          <li>コード例は薄いグレー背景の <code>code</code> / <code>pre</code> で表記しています。</li>
+          <li>難しい用語には（意味）を添えているので、不明でもその場で把握できます。</li>
+        </ul>
+      </section>
+
+      <section id="architecture">
+        <h2>1. システム全体像</h2>
+        <p>RE;Quest は「Next.js で描画する SPA + Rails API」という二階建て構成です。</p>
+        <div class="hero">
+          <h3>技術選定の理由</h3>
+          <ul>
+            <li><span class="tech-badge">Next.js</span> SSR + App Router + Vercel で UI を素早く展開できる。</li>
+            <li><span class="tech-badge">Rails API</span> Devise / Active Record / Active Storage で REST を効率的に構築。</li>
+            <li><span class="tech-badge">PostgreSQL</span> pg_search + pg_trgm + JSONB で全文検索＆柔軟なデータ設計。</li>
+            <li><span class="tech-badge">Stripe / Google OAuth / SendGrid</span> 決済・ソーシャルログイン・メール通知を標準化。</li>
+          </ul>
+          <p><strong>この組み合わせにより、UI/UX 検証 → 本番 API → 決済・検索 → 運用までを段階的に進められるロードマップが構築されています。</strong></p>
+        </div>
+        <div class="highlight">
+          <p><strong>超重要:</strong> 「Next.js + Rails + PostgreSQL + Stripe/Google/SendGrid」の軸を崩さない限り、実装フェーズが変わっても同じ操作モデルを保てます。</p>
+        </div>
+        <div class="highlight">
+          <p><strong>質問されやすいポイント:</strong> 「なぜ SPA + API 構成？」→ 画面の高速な更新（SPA）とビジネスロジックの集中管理（API）を分けることで、機能追加やハッカソン後の本番移行がしやすくなるためです。</p>
+        </div>
+        <ul>
+          <li>
+            フロント：<span class="badge badge-file">frontend/app</span> 以下で画面を描画。認証や状態管理は
+            Context API／hooks で統一。
+          </li>
+          <li>
+            API：<span class="badge badge-file">backend/app/controllers/api/v1</span> に REST コントローラ。JWT を
+            使い、ヘッダで <code>Authorization: Bearer ...</code> を交換。
+          </li>
+        </ul>
+        <pre class="code-stack">ユーザー → Next.js (App Router) → axios → Rails API → PostgreSQL
+                                    ↘ Stripe / Google / (今後) AWS S3</pre>
+      </section>
+
+      <section id="frontend">
+        <h2>2. フロントエンド基礎</h2>
+        <div class="hero">
+        <h3>選定理由 / ポイント</h3>
+        <ul>
+          <li><span class="tech-badge">Next.js + React</span> … App Router で機能ごとにフォルダ分割、hooks で状態管理。</li>
+          <li><span class="tech-badge">TypeScript</span> … 型補完で UI と API の整合を保つ。</li>
+          <li><span class="tech-badge">Tailwind</span> … 40〜60 代向けの大きめ UI を効率よく整える。</li>
+          <li><span class="tech-badge">Context API</span> … 認証や通知の共有状態を provider で一元管理。</li>
+        </ul>
+        </div>
+        <div class="highlight">
+          <p><strong>超重要:</strong> フロントは <span class="badge badge-file">AuthContext</span> と <span class="badge badge-state">lib/api/*</span> を介して API を呼ぶことで、各ページが同じ認証・通信モデルに統一されています。</p>
+        </div>
+        <h3>Next.js App Router</h3>
+        <pre class="code-stack">app/
+├── page.tsx      ... トップページ
+├── dashboard/    ... ダッシュボード (ユーザー/企業共通)
+├── chat/         ... チャット一覧 &amp; 詳細
+└── (auth)/       ... ログイン / 新規登録</pre>
+        <ul>
+          <li>
+            ページで状態が必要 → `use client` + hooks。共通状態（認証や通知）は
+            <span class="badge badge-file">frontend/lib/AuthContext.tsx</span> などの provider で配布。
+          </li>
+          <li>
+            データ取得は <span class="badge badge-state">lib/api/*.ts</span> の axios ラッパーを呼ぶだけにし、UI
+            から直接エンドポイントを意識させません。
+          </li>
+        </ul>
+        <div class="highlight">
+          <p><strong>質問されやすいポイント:</strong> 「なぜ Next.js を選んだのか？」→ SSR で SEO を担保しつつ、App Router のフォルダ構造で UI を分割しやすいからです。さらに Vercel へのデプロイが標準化されているため、ハッカソン後の本番移行も容易。</p>
+        </div>
+      </section>
+
+      <section id="backend">
+        <h2>3. バックエンド基礎</h2>
+        <div class="hero">
+          <h3>選定理由</h3>
+          <ul>
+            <li><span class="tech-badge">Devise / Active Record</span> … 認証やORMが整っており開発速度を確保。</li>
+            <li><span class="tech-badge">API モード</span> … フロントとは JSON のみでやり取りでき、SPA と相性が良い。</li>
+          </ul>
+        </div>
+        <div class="highlight">
+          <p><strong>超重要:</strong> Rails は JSON 以外のレスポンスを返さない（API モード）ため、フロントと完全に役割分担できます。追加機能も <code>/api/v1</code> の配下に統一。</p>
+        </div>
+        <div class="highlight">
+          <p><strong>質問されやすいポイント:</strong> 「REST API の拡張は？」→ <span class="badge badge-file">backend/app/controllers/api/v1</span> に機能ごとのコントローラを追加し、<code>routes.rb</code> も <code>namespace :api</code> 内で集約しています。Devise + JWT の基盤を使うため、認証済みヘッダさえあればどの機能でも共通の扱いです。</p>
+        </div>
+        <p>
+          Rails 8.1 を API モードで利用。<span class="badge badge-file">backend/config/routes.rb</span> で
+          <code>namespace :api do ... end</code> を追加し、<code>/api/v1/...</code> を束ねています。
+        </p>
+        <ul>
+          <li>認証：<span class="tech-badge">Devise + devise-jwt</span>（のちほど詳述）</li>
+          <li>非同期：Action Mailer / Active Storage / Stripe Webhook など、必要な gem だけ導入</li>
+          <li>DB：PostgreSQL（ローカルでは sqlite → postgresql へ移行想定）</li>
+        </ul>
+        <p>
+          <span class="badge badge-command">bundle exec rails s -p 3002</span> で起動し、フロントからは
+          <code>http://localhost:3002/api/v1</code> を叩きます。
+        </p>
+      </section>
+
+      <section id="auth">
+        <h2>4. 認証（Devise + JWT + OAuth）</h2>
+        <div class="hero">
+          <h3>仕組み</h3>
+          <ol class="steps">
+            <li>Devise で `User` モデルを生成し、<code>devise :database_authenticatable, :registerable, ...</code> を付与。</li>
+            <li><span class="tech-badge">devise-jwt</span> を使い、ログイン/登録成功時に JWT（JSON Web Token = 認証情報を含む署名付きトークン）をレスポンスヘッダへ付与。</li>
+            <li>
+              フロントは <span class="badge badge-state">AuthContext.login/register</span> 内で
+              <code>response.headers['authorization']</code> を読み取り
+              <span class="badge badge-state">localStorage.authToken</span> に保存。
+            </li>
+            <li>OAuth（Google）は <span class="tech-badge">OmniAuth</span>（OAuth ライブラリ）を利用。<code>/auth/google</code> → Google → コールバック（OAuth の戻り先 URL）で JWT を発行。</li>
+          </ol>
+        </div>
+        <pre class="code-stack">// front-end login flow (AuthContext.tsx)
+const response = await authApi.login({ email, password });
+const token = response.headers['authorization'];
+localStorage.setItem('authToken', token?.replace('Bearer ', ''));</pre>
+        <div class="highlight">
+          <p><strong>質問されやすいポイント:</strong> 「ログインの仕組みは？」→ <span class="tech-badge">Devise</span> でユーザーを管理し、<span class="tech-badge">JWT</span> をヘッダに付与。フロント側では Context が JWT とユーザー情報を localStorage に保持し、どの画面でも再利用しています。</p>
+        </div>
+      </section>
+
+      <section id="db">
+        <h2>5. データベース設計</h2>
+        <div class="hero">
+          <h3>設計方針</h3>
+          <ul>
+            <li><strong>users</strong>: role でユーザー/企業を区別し、プロフィールの自由記述欄を <span class="tech-badge">JSONB</span> で柔軟に扱う余地を残す。</li>
+            <li><strong>dreams</strong>: ステータス遷移（active→matched→completed）をシンプルな文字列で管理。</li>
+            <li><strong>proposals</strong>: 提案の承認状況とチャット/決済を繋ぐハブ。</li>
+          </ul>
+        </div>
+        <p>
+          主要テーブルは <code>users</code>, <code>dreams</code>, <code>proposals</code>, <code>notifications</code>, <code>chat_rooms</code>, <code>messages</code> など。
+        </p>
+        <ul>
+          <li>
+            <strong>users</strong>: <code>role</code>, <code>nickname</code>, <code>age_group</code> などを持ち、企業かどうかで表示を分岐。
+          </li>
+          <li>
+            <strong>dreams</strong>: ユーザーの夢。<code>category_id</code>, <code>budget_range</code>, <code>status</code> を持つ。
+          </li>
+          <li>
+            <strong>proposals</strong>: 企業からの提案。<code>status</code>（pending/accepted/rejected）や連携する
+            <code>chat_room_id</code> を保持。
+          </li>
+        </ul>
+        <p>マイグレーション（DB スキーマ変更）例:</p>
+        <pre class="code-stack">create_table :dreams do |t|
+  t.references :user, null: false
+  t.string :content, null: false
+  t.integer :category_id
+  t.string :budget_range
+  t.string :status, default: 'active'
+  t.timestamps
+end</pre>
+        <div class="highlight">
+          <p><strong>超重要:</strong> 「ユーザー → 夢 → 提案 → チャット / 決済」のリレーションを崩さないこと。ER 図を常に意識してマイグレーションを変更しましょう。</p>
+        </div>
+        <div class="highlight">
+          <p><strong>質問されやすいポイント:</strong> 「会員の属性はどう活用するのか？」→ users テーブルの role / age_group / prefecture 等を使い、dreams/proposals に紐づけてレコメンドや通知フィルタを実装します。</p>
+        </div>
+      </section>
+
+      <section id="payment">
+        <h2>6. 決済（Stripe Connect）</h2>
+        <p>Phase 3 で導入。以下の流れを押さえておけば実装全体を追いやすいです。</p>
+        <ol class="steps">
+          <li>企業ユーザーが <span class="badge badge-state">/settings/stripe</span> で「Stripe アカウント作成」ボタンをクリック。</li>
+          <li>Rails が <span class="tech-badge">Stripe API</span> で Connect アカウントを作成し、オンボーディング（Stripe 側の情報入力手続き）URL を返す。</li>
+          <li>オンボーディング完了後、提案承認 → 決済フローで <span class="tech-badge">PaymentIntent</span> を作成。</li>
+          <li>Webhook (<code>/api/v1/webhooks/stripe</code>) で <span class="tech-badge">payment_intent.succeeded</span> を受信し、DB を更新。</li>
+        </ol>
+        <pre class="code-stack"># backend/app/services/payments/create_payment_intent.rb (イメージ)
+Stripe::PaymentIntent.create(
+  amount: proposal.price_cents,
+  currency: 'jpy',
+  application_fee_amount: platform_fee,
+  transfer_data: { destination: company.stripe_account_id }
+)</pre>
+        <div class="highlight">
+          <p><strong>超重要:</strong> Stripe Connect の Webhook URL や鍵の設定ミスは致命的です。Render と Stripe の管理画面で常に二重チェックしてください。</p>
+        </div>
+        <div class="highlight">
+          <p><strong>質問されやすいポイント:</strong> 「プラットフォーム手数料はどう確保する？」→ PaymentIntent 作成時に <span class="tech-badge">application_fee_amount</span> を設定し、10% の手数料を自動で差し引いています。</p>
+        </div>
+      </section>
+
+      <section id="search-realtime">
+        <h2>7. 検索 / チャット / 通知</h2>
+        <h3>全文検索（pg_search + pg_trgm）</h3>
+        <ul>
+          <li>Phase 3 で PostgreSQL に移行し、<span class="tech-badge">pg_search_scope</span> で <code>Dream.search_by_content</code> を定義。</li>
+          <li>あいまい検索（<span class="tech-badge">trigram</span>）を有効にしてタイプミスにも対応。</li>
+        </ul>
+        <pre class="code-stack">pg_search_scope :search_by_content,
+  against: :content,
+  using: {
+    tsearch: { prefix: true },
+    trigram: { threshold: 0.3 }
+  }</pre>
+        <div class="highlight">
+          <p><strong>超重要:</strong> 検索・チャット・通知は同じユーザー体験を支えるセット。pg_search / Notification API / ChatRooms を同時にメンテし、片方だけ更新しないよう注意。</p>
+        </div>
+        <div class="highlight">
+          <p><strong>質問されやすいポイント:</strong> 「検索はどう実装している？」→ <span class="tech-badge">pg_search_scope</span> + <span class="tech-badge">pg_trgm</span> を使い、タイプミスにも対応した全文検索を実現しています。</p>
+        </div>
+
+        <h3>チャット &amp; 通知</h3>
+        <ul>
+          <li>チャット：<span class="badge badge-file">frontend/app/chat</span> で `GET /chat_rooms`, `GET/POST /chat_rooms/:id/messages` を扱う。</li>
+          <li>通知：Phase 1 では localStorage モック、Phase 2 以降は API を呼び出して未読管理を行う予定。</li>
+        </ul>
+      </section>
+
+      <section id="deploy">
+        <h2>8. デプロイ / 運用</h2>
+        <p>推奨構成は「フロント＝<span class="tech-badge">Vercel</span>」「バックエンド＝<span class="tech-badge">Render</span>」。</p>
+        <ul>
+          <li>Vercel に GitHub リポジトリを連携し、<code>NEXT_PUBLIC_API_URL</code> などの環境変数を設定。</li>
+          <li>Render で Web Service + PostgreSQL を作成。<span class="badge badge-command">render.yaml</span> の <code>buildCommand</code>/<code>startCommand</code> を利用。</li>
+          <li>Stripe, Google OAuth, AWS (S3/SES) などの秘密鍵は Render の環境変数に登録。</li>
+          <li>カスタムドメインを使うなら、Vercel と Render 双方でドメイン設定 → DNS へ CNAME 追加。</li>
+        </ul>
+        <h3>チェックリスト例</h3>
+        <ul>
+          <li>Rails: <code>RAILS_MASTER_KEY</code>、<code>SECRET_KEY_BASE</code> の登録</li>
+          <li>フロント: <code>npm run build</code> がローカルで通るか</li>
+          <li>決済: Stripe Webhook が本番 URL を向いているか</li>
+          <li>OAuth: Google のリダイレクト URL に本番ドメインを追加したか</li>
+        </ul>
+        <div class="highlight">
+          <p><strong>超重要:</strong> フロント=Vercel / API=Render の構成を守ると、環境変数と Secret の置き場が一本化され、トラブルシュートも容易になります。</p>
+        </div>
+        <div class="highlight">
+          <p><strong>質問されやすいポイント:</strong> 「CI/CD は？」→ Vercel/Render それぞれの Git 連携で自動デプロイ。必要なら GitHub Actions のワークフローを追加して <code>npm run build</code> / <code>rails test</code> を事前実行できます。</p>
+        </div>
+      </section>
+
+      <section>
+        <h2>Appendix</h2>
+        <ul>
+          <li><strong>開発 vs 本番</strong>：Phase 1 はモック、Phase 2 で Rails API に切り替え、Phase 3 で決済や管理画面、Phase 4 で本番デプロイという流れ。</li>
+          <li><strong>ログ＆デバッグ</strong>：フロントは <code>npm run dev</code> のログ、バックエンドは <code>backend/log/development.log</code> を参照。</li>
+          <li><strong>アクセス管理</strong>：承認制の機能（チャット/決済）は Rails 側で role を確認し、フロントでも二重に制御すると安全。</li>
+        </ul>
+      </section>
+    </main>
+  </body>
+</html>

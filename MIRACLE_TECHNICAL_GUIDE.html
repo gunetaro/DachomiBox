@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MIRACLE TECHNICAL GUIDE</title>
+    <link rel="stylesheet" href="miracle.css" />
+    <style>
+      body {
+        line-height: 1.7;
+        font-size: 13px;
+      }
+      p,
+      li {
+        margin-bottom: 6px;
+      }
+      pre,
+      code {
+        line-height: 1.6;
+        padding: 6px 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>MIRACLE TECHNICAL GUIDE</h1>
+        <p>
+          画面操作を「誰が・いつ・どこで・何をしたか」まで追跡する実況ログ。コマンド /
+          ファイル / state &amp; API を色付きバッジで示し、操作→state→API→レスポンスを一気に把握できます。
+        </p>
+      </header>
+
+      <section class="hero">
+        <h2>📦 事前準備</h2>
+        <p>
+          <span class="badge badge-outline badge-command">緑 = コマンド</span>
+          <span class="badge badge-outline badge-file">青 = ファイル / コンポーネント</span>
+          <span class="badge badge-outline badge-state">紫 = state 更新 / API 処理</span>
+        </p>
+        <p>以下のコマンドでフロント / バックエンドを起動し、環境変数を設定します。</p>
+        <pre class="code-stack">cd frontend
+npm install
+npm run dev</pre>
+        <pre class="code-stack">cd backend
+bundle install
+rails db:setup
+rails s -p 3002</pre>
+        <ul>
+          <li><code>.env.local</code> に <code>NEXT_PUBLIC_API_URL=http://localhost:3002/api/v1</code></li>
+          <li><code>$TOKEN</code> にはログイン後の JWT をセット（以下の curl 例で使用）</li>
+        </ul>
+      </section>
+
+      <section id="step1">
+        <h2>1. トップページ表示</h2>
+        <table>
+          <tr>
+            <th>操作</th>
+            <th>裏側</th>
+          </tr>
+          <tr>
+            <td><code>http://localhost:3000/</code> を開く</td>
+            <td>
+              Next.js dev server が <span class="badge badge-file">frontend/app/page.tsx</span> を描画
+            </td>
+          </tr>
+          <tr>
+            <td>`useAuth()` が発火</td>
+            <td>
+              <span class="badge badge-file">frontend/app/layout.tsx</span> 内の
+              <code>AuthProvider</code> が <code>localStorage.currentUser</code> を確認
+            </td>
+          </tr>
+          <tr>
+            <td>ログイン済みの場合</td>
+            <td><span class="badge badge-state">router.push('/dashboard')</span> でリダイレクト</td>
+          </tr>
+          <tr>
+            <td>未ログインの場合</td>
+            <td>ヒーロー UI をそのまま描画</td>
+          </tr>
+        </table>
+        <p><span class="badge badge-command">curl -I http://localhost:3000/</span></p>
+        <div class="omake">
+          <h4>📝 おまけ</h4>
+          <ul>
+            <li><code>curl -I</code> は HTTP ヘッダーのみ確認するコマンド。サーバー起動チェックに便利です。</li>
+            <li>
+              <span class="badge badge-file">frontend/app/page.tsx</span> はトップページコンポーネント。<code>useAuth</code>
+              で認証状態を監視しています。
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <section id="step2">
+        <h2>2. ユーザー会員登録</h2>
+        <ol class="steps">
+          <li>フォームに <code>hanako@example.com</code> / <code>password</code> を入力 → <span class="badge badge-state">setEmail/setPassword/setRole</span></li>
+          <li>「新規会員登録」→ <span class="badge badge-state">useAuth().register()</span></li>
+          <li><span class="badge badge-state">axios.post('/auth/register')</span> で Rails へ送信</li>
+          <li>Rails <code>Api::V1::RegistrationsController</code> がユーザー作成</li>
+          <li>レスポンスヘッダの JWT を <code>localStorage</code> に保存</li>
+          <li><span class="badge badge-state">router.push('/dashboard')</span></li>
+        </ol>
+        <div class="hero">
+          <p><strong>詳しい動き:</strong></p>
+          <ul>
+            <li><strong>1</strong> … `setEmail/setPassword/setRole` がフォーム入力を state に保持。</li>
+            <li><strong>2</strong> … 「新規会員登録」で <code>handleSubmit → useAuth().register()</code> が呼ばれる。</li>
+            <li><strong>3</strong> … <code>axios.post('/auth/register')</code> が Devise/RegistrationsController へ JSON を送信。</li>
+            <li><strong>4</strong> … Rails がユーザーをDBに作成。</li>
+            <li><strong>5</strong> … レスポンスヘッダ <code>Authorization: Bearer ...</code> を <code>localStorage.authToken</code> に保存。</li>
+            <li><strong>6</strong> … <code>router.push('/dashboard')</code> でダッシュボードへ遷移。</li>
+          </ul>
+          <p><strong>コマンドの意味:</strong> curl 例はフォーム送信と同じ JSON を送り、CLI から Devise が JWT を返すか確認するためのものです。</p>
+        </div>
+        <p><span class="badge badge-command">curl -X POST http://localhost:3002/api/v1/auth/register -H 'Content-Type: application/json' -d '{"user":{"email":"hanako@example.com","password":"password","role":"user","nickname":"花子"}}'</span></p>
+        <div class="omake">
+          <h4>📝 おまけ</h4>
+          <ul>
+            <li><span class="badge badge-file">frontend/app/(auth)/register/page.tsx</span> … 新規登録画面のフォーム。</li>
+            <li><span class="badge badge-file">frontend/lib/AuthContext.tsx</span> … <code>register</code> が API を呼び、JWT とユーザー情報を保存。</li>
+            <li>上記 <code>curl</code> はフォーム送信と同じ JSON を投げるテスト用コマンド。</li>
+          </ul>
+        </div>
+      </section>
+
+      <section id="step3">
+        <h2>3. プロフィール編集</h2>
+        <table>
+          <tr>
+            <th>Step</th>
+            <th>フロント</th>
+            <th>サーバー</th>
+          </tr>
+          <tr>
+            <td>/profile 表示</td>
+            <td><code>useEffect</code> で `currentUser` をチェックし未ログインなら `/login`</td>
+            <td>—</td>
+          </tr>
+          <tr>
+            <td>プロフィール取得</td>
+            <td><span class="badge badge-state">fetchProfile()</span> → `GET /users/me`</td>
+            <td><code>UsersController#show</code></td>
+          </tr>
+          <tr>
+            <td>入力編集</td>
+            <td><span class="badge badge-state">setNickname/setBio/setPreviewUrl</span></td>
+            <td>—</td>
+          </tr>
+          <tr>
+            <td>画像選択</td>
+            <td><span class="badge badge-state">handleFileChange</span> が validation</td>
+            <td>—</td>
+          </tr>
+          <tr>
+            <td>保存</td>
+            <td><span class="badge badge-state">handleSubmit</span> → FormData で送信</td>
+            <td>`PUT /users/me`</td>
+          </tr>
+          <tr>
+            <td>成功</td>
+            <td><code>localStorage.currentUser</code> 更新 + Toast</td>
+            <td><code>UsersController#update</code></td>
+          </tr>
+        </table>
+        <div class="omake">
+          <h4>📝 おまけ</h4>
+          <ul>
+            <li><code>curl ... -F</code> はマルチパート送信。画像などのバイナリを添付できる。</li>
+            <li><span class="badge badge-file">frontend/app/profile/page.tsx</span> … プロフィール編集画面の本体。</li>
+            <li><span class="badge badge-state">handleFileChange</span> … 5MB超や非画像ファイルを弾くためのガード処理。</li>
+          </ul>
+        </div>
+      </section>
+
+      <section id="step4">
+        <h2>4. 夢の投稿（ユーザー）</h2>
+        <ol class="steps">
+          <li>テキストエリアに「世界一周旅行」→ <span class="badge badge-state">setContent</span></li>
+          <li>カテゴリ/予算を選択 → <span class="badge badge-state">setCategoryId/setBudgetRange</span></li>
+          <li>「投稿する」→ <span class="badge badge-state">handleSubmit → onSubmit</span></li>
+          <li>ダッシュボードの <span class="badge badge-state">handlePostDream</span> が <span class="badge badge-state">dreamsApi.createDream()</span></li>
+          <li>Rails `DreamsController#create` が保存 → JSON で返却</li>
+          <li><span class="badge badge-state">setDreams([新しい夢, ...])</span> で即反映</li>
+        </ol>
+        <div class="hero">
+          <p><strong>詳しい動き:</strong></p>
+          <ul>
+            <li><strong>1</strong> … <code>setContent</code> で入力を保持。</li>
+            <li><strong>2</strong> … <code>setCategoryId/setBudgetRange</code> がカテゴリ/予算を保持。</li>
+            <li><strong>3</strong> … 「投稿する」で <code>handleSubmit → onSubmit</code> が発火し、親へ値を渡す。</li>
+            <li><strong>4</strong> … 親の <code>handlePostDream</code> が <code>dreamsApi.createDream()</code> を呼び出す。</li>
+            <li><strong>5</strong> … Rails <code>DreamsController#create</code> が DB に保存して JSON を返す。</li>
+            <li><strong>6</strong> … <code>setDreams([新しい夢, ...])</code> で一覧に即座に追加。</li>
+          </ul>
+        </div>
+        <div class="omake">
+          <h4>📝 おまけ</h4>
+          <ul>
+            <li><span class="badge badge-file">frontend/components/dream/DreamPostModal.tsx</span> … モーダル UI と入力検証。</li>
+            <li><span class="badge badge-file">frontend/app/dashboard/page.tsx</span> … 夢一覧と state 管理。</li>
+            <li><span class="badge badge-state">dreamsApi.createDream</span> … `POST /dreams` を呼び出すユーティリティ。</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Steps 5-11 -->
+      <section id="step5">
+        <h2>5. 企業ログイン</h2>
+        <ol class="steps">
+          <li>フォーム入力 → <span class="badge badge-state">setEmail/setPassword</span></li>
+          <li>「ログイン」→ <span class="badge badge-state">useAuth().login()</span></li>
+          <li><span class="badge badge-state">axios.post('/auth/login')</span> で JWT を取得</li>
+          <li><span class="badge badge-state">router.push('/dashboard')</span></li>
+        </ol>
+        <div class="hero">
+          <p><strong>詳しい動き:</strong></p>
+          <ul>
+            <li><strong>1</strong> … `setEmail/setPassword` で入力値を保持。</li>
+            <li><strong>2</strong> … 「ログイン」で <code>handleSubmit → useAuth().login()</code>。</li>
+            <li><strong>3</strong> … <code>axios.post('/auth/login')</code> が JWT を受け取り、<code>localStorage</code> に保存。</li>
+            <li><strong>4</strong> … role が <code>company</code> のため企業向け UI が解放される。</li>
+          </ul>
+        </div>
+        <div class="omake">
+          <h4>📝 おまけ</h4>
+          <ul>
+            <li><span class="badge badge-file">frontend/app/(auth)/login/page.tsx</span> … ログインフォーム。Google OAuth ボタンもここ。</li>
+            <li>企業向け UI は `user.role === 'company'` で出し分けているため、role が正しく返っているかが重要。</li>
+          </ul>
+        </div>
+      </section>
+
+      <section id="step6">
+        <h2>6. 夢の検索（企業）</h2>
+        <table>
+          <tr><th>操作</th><th>処理</th></tr>
+          <tr><td>カテゴリ選択</td><td><span class="badge badge-state">setSelectedCategory(4)</span></td></tr>
+          <tr><td>自動検索</td><td><span class="badge badge-state">fetchDreams({category_id:4})</span></td></tr>
+          <tr><td>API</td><td><span class="badge badge-state">dreamsApi.getDreams</span> → `GET /dreams?category_id=4`</td></tr>
+          <tr><td>表示</td><td><span class="badge badge-state">setDreams(response.data)</span></td></tr>
+          <tr><td>備考</td><td>キーワード検索は既知の不具合 → カテゴリで回避</td></tr>
+        </table>
+        <div class="hero">
+          <p><strong>詳しい動き:</strong></p>
+          <ul>
+            <li><strong>1</strong> … カテゴリボタンで <code>setSelectedCategory</code> を更新。</li>
+            <li><strong>2</strong> … state 変更をフックに <code>fetchDreams</code> が再実行。</li>
+            <li><strong>3</strong> … <code>dreamsApi.getDreams</code> が <code>GET /dreams?category_id=...</code> を呼び、レスポンスを取得。</li>
+            <li><strong>4</strong> … <code>setDreams(response.data)</code> で一覧に反映し、提案へ進める。</li>
+          </ul>
+        </div>
+        <div class="omake">
+          <h4>📝 おまけ</h4>
+          <ul><li><span class="badge badge-state">fetchDreams</span> 内で企業/ユーザー双方の夢一覧を扱うため、無駄な API 呼び出しが無いかチェックすると改善ポイントが見つかる。</li></ul>
+        </div>
+      </section>
+
+      <section id="step7">
+        <h2>7. 提案送信（企業 → ユーザー）</h2>
+        <ol class="steps">
+          <li>入力 → <span class="badge badge-state">setTitle/setContent/setPrice</span></li>
+          <li>送信 → <span class="badge badge-state">handleSubmit</span></li>
+          <li>親が <span class="badge badge-state">proposalsApi.createProposal</span></li>
+          <li>`POST /proposals` → Rails `ProposalsController#create`</li>
+          <li><span class="badge badge-state">setProposals([...prev, data])</span></li>
+        </ol>
+        <div class="hero">
+          <p><strong>詳しい動き:</strong></p>
+          <ul>
+            <li><strong>1</strong> … モーダル入力を <code>setTitle/setContent/setPrice</code> に保持。</li>
+            <li><strong>2</strong> … 送信で <code>handleSubmit</code> がバリデーションを通過すると親へ値を渡す。</li>
+            <li><strong>3〜5</strong> … 親が <code>proposalsApi.createProposal</code> を呼び、<code>dream_id</code> + <code>proposal</code> パラメータを Rails へ送信。レスポンスで返ったデータを <code>setProposals</code> に追加。</li>
+          </ul>
+          <p><strong>コマンドの意味:</strong> 下記の curl 例で、企業アカウントの JWT を使って <code>POST /proposals</code> を検証できます。</p>
+        </div>
+        <p><span class="badge badge-command">curl -X POST http://localhost:3002/api/v1/proposals -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d '{"dream_id":1,"proposal":{"title":"アマゾン珍味体験","content":"希少食材を提供...","price":50000}}'</span></p>
+        <div class="omake">
+          <h4>📝 おまけ</h4>
+          <ul>
+            <li><span class="badge badge-file">frontend/components/proposal/ProposalSendModal.tsx</span> … 入力とバリデーションをまとめたモーダル。</li>
+            <li><span class="badge badge-state">proposalsApi.createProposal</span> … `dream_id` をトップレベル、`proposal` をネストして送る形を統一。</li>
+          </ul>
+        </div>
+      </section>
+
+      <section id="step8">
+        <h2>8. スマホ通知確認</h2>
+        <ol class="steps">
+          <li>ベルをタップ → <span class="badge badge-state">toggleDropdown()</span></li>
+          <li>初回 → <span class="badge badge-state">initializeNotifications()</span></li>
+          <li><span class="badge badge-state">loadNotifications()</span> / <span class="badge badge-state">getNotificationsByUserId</span></li>
+          <li>未読数 → <span class="badge badge-state">getUnreadCount()</span></li>
+          <li>リアルタイム push は未実装 → リロードで更新</li>
+        </ol>
+        <div class="hero">
+          <p><strong>詳しい動き:</strong></p>
+          <ul>
+            <li><strong>1行目</strong> … スマホでベルを開くと <code>toggleDropdown()</code> が起動。</li>
+            <li><strong>2行目</strong> … 初回なら <code>initializeNotifications()</code> が localStorage に初期データを作成。</li>
+            <li><strong>3〜4行目</strong> … <code>loadNotifications()</code> が <code>getNotificationsByUserId</code> と <code>getUnreadCount</code> を呼び、未読バッジを更新。</li>
+            <li><strong>5行目</strong> … リアルタイム push は未実装なので、再表示やリロードで最新状態にします。</li>
+          </ul>
+        </div>
+        <div class="omake">
+          <h4>📝 おまけ</h4>
+          <ul>
+            <li><span class="badge badge-file">frontend/components/notifications/NotificationBell.tsx</span> … 通知ベルの UI と処理。</li>
+            <li><span class="badge badge-file">frontend/lib/notifications.ts</span> … localStorage ベースのモック通知。</li>
+          </ul>
+        </div>
+      </section>
+
+      <section id="step9">
+        <h2>9. 通知を既読にする</h2>
+        <ol class="steps">
+          <li>通知カードクリック → <span class="badge badge-state">handleMarkAsRead(id)</span></li>
+          <li><span class="badge badge-state">markAsRead</span> が localStorage を更新</li>
+          <li><span class="badge badge-state">loadNotifications()</span> で再表示</li>
+          <li>バッジが消え、今後は `related_type` で詳細表示予定</li>
+        </ol>
+        <div class="hero">
+          <p><strong>詳しい動き:</strong></p>
+          <ul>
+            <li><strong>1行目</strong> … 通知カードクリックで <code>handleMarkAsRead</code> が起動し、既読状態を更新。</li>
+            <li><strong>2行目</strong> … <code>markAsRead</code> が localStorage の対象レコードを書き換える。</li>
+            <li><strong>3〜4行目</strong> … <code>loadNotifications()</code> で一覧を再読み込みし、未読フラグと件数が即時に変わる。</li>
+          </ul>
+        </div>
+        <div class="omake">
+          <h4>📝 おまけ</h4>
+          <ul>
+            <li>`e.stopPropagation()` でメニュー外クリック処理を止めているため、開いたまま既読にできる。</li>
+            <li><span class="badge badge-state">markAsRead</span> は `read_at` も保存するので、サーバー実装時のタイムスタンプにも利用可能。</li>
+          </ul>
+        </div>
+      </section>
+
+      <section id="step10">
+        <h2>10. 提案承認</h2>
+        <ol class="steps">
+          <li>「承認」→ `confirm`</li>
+          <li><span class="badge badge-state">handleAcceptProposal(id)</span></li>
+          <li><span class="badge badge-state">proposalsApi.acceptProposal</span> → `POST /proposals/:id/accept`</li>
+          <li>Rails が `status=accepted` + `ChatRoom` を生成</li>
+          <li><span class="badge badge-state">window.location.href = /chat/:id</span> でチャットへ</li>
+          <li>企業には承認通知、ユーザー UI は `accepted` 表示</li>
+        </ol>
+        <div class="hero">
+          <p><strong>詳しい動き:</strong></p>
+          <ul>
+            <li><strong>1</strong> … 「承認」で <code>confirm</code> による確認を挟む。</li>
+            <li><strong>2</strong> … OK なら <code>handleAcceptProposal</code> が処理を開始。</li>
+            <li><strong>3</strong> … <code>proposalsApi.acceptProposal</code> が <code>POST /proposals/:id/accept</code> を呼ぶ。</li>
+            <li><strong>4</strong> … Rails で <code>status=accepted</code> と <code>ChatRoom</code> が生成される。</li>
+            <li><strong>5</strong> … レスポンスの <code>chat_room.id</code> を使って <code>/chat/:id</code> に遷移。</li>
+            <li><strong>6</strong> … 企業には承認通知、ユーザー画面は `accepted` 表示に更新。</li>
+          </ul>
+          <p><strong>コマンドの意味:</strong> 下記の curl は JWT を付与して提案を承認する場合の例。API が <code>chat_room</code> を返すことを CLI で確認できます。</p>
+        </div>
+        <p><span class="badge badge-command">curl -X POST http://localhost:3002/api/v1/proposals/12/accept -H "Authorization: Bearer $TOKEN"</span></p>
+        <div class="omake">
+          <h4>📝 おまけ</h4>
+          <ul>
+            <li><span class="badge badge-state">handleAcceptProposal</span> は確認ダイアログで誤操作を防止。</li>
+            <li><span class="badge badge-state">proposalsApi.acceptProposal</span> のレスポンスにチャット情報が含まれ、遷移先 URL を決定する。</li>
+          </ul>
+        </div>
+      </section>
+
+      <section id="step11">
+        <h2>11. チャット</h2>
+        <ol class="steps">
+          <li>`/chat` → <span class="badge badge-state">fetchChatRooms()</span> (`GET /chat_rooms`)</li>
+          <li>ルーム選択 → `/chat/[id]` → `GET /chat_rooms/:id/messages`</li>
+          <li>入力 → <span class="badge badge-state">setMessage</span></li>
+          <li>送信 → <span class="badge badge-state">POST /chat_rooms/:id/messages</span></li>
+          <li>返却データを `setMessages` に流し、必要なら Action Cable / ポーリングを追加</li>
+        </ol>
+        <div class="hero">
+          <p><strong>詳しい動き:</strong></p>
+          <ul>
+            <li><strong>1</strong> … <code>fetchChatRooms()</code> が <code>GET /chat_rooms</code> を呼び、ユーザー/企業に紐づくルームのみ返す。</li>
+            <li><strong>2</strong> … ルームリンクで <code>/chat/[id]</code> に移動し、<code>GET /chat_rooms/:id/messages</code> で履歴を取得。</li>
+            <li><strong>3</strong> … 入力フォームで <code>setMessage</code> が state を更新。</li>
+            <li><strong>4</strong> … 「送信」で <code>POST /chat_rooms/:id/messages</code> を呼び、サーバーに保存。</li>
+            <li><strong>5</strong> … レスポンスを <code>setMessages</code> に渡して UI を更新。必要なら Action Cable / ポーリングで最新化。</li>
+          </ul>
+          <p><strong>コマンドの意味:</strong> 下の curl 例では <code>GET /chat_rooms</code> を CLI で確認でき、どのルームが紐づくかをデバッグできます。</p>
+        </div>
+        <p><span class="badge badge-command">curl -H "Authorization: Bearer $TOKEN" http://localhost:3002/api/v1/chat_rooms</span></p>
+        <div class="omake">
+          <h4>📝 おまけ</h4>
+          <ul>
+            <li><span class="badge badge-file">frontend/app/chat/page.tsx</span> … チャットルーム一覧。ダミー未読バッジがあるので本番時は API 連携へ置き換え。</li>
+            <li><span class="badge badge-file">frontend/app/chat/[id]/page.tsx</span> … 個別チャット。現在はポーリングで最新メッセージを取得。</li>
+          </ul>
+        </div>
+      </section>
+
+      <section>
+        <h2>🔧 トラブル回避</h2>
+        <ul>
+          <li>通知が更新されない → Step8 の通りベルを閉じて開く / リロード</li>
+          <li>API 401 → <code>localStorage.authToken</code> をクリアし再ログイン</li>
+          <li>フロントのみ更新 → <code>npm run dev</code> を再起動</li>
+          <li>Rails 500 → <code>backend/log/development.log</code> を確認</li>
+        </ul>
+      </section>
+    </main>
+  </body>
+</html>
