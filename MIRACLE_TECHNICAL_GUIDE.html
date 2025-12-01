@@ -54,31 +54,31 @@ rails s -p 3002</pre>
 
       <section id="step1">
         <h2>1. トップページ表示</h2>
-        <table>
+        <table class="responsive-table">
           <tr>
-            <th>操作</th>
-            <th>裏側</th>
+            <th scope="col">操作</th>
+            <th scope="col">裏側</th>
           </tr>
           <tr>
-            <td><code>http://localhost:3000/</code> を開く</td>
-            <td>
+            <td data-label="操作"><code>http://localhost:3000/</code> を開く</td>
+            <td data-label="裏側">
               Next.js dev server が <span class="badge badge-file">frontend/app/page.tsx</span> を描画
             </td>
           </tr>
           <tr>
-            <td>`useAuth()` が発火</td>
-            <td>
+            <td data-label="操作">`useAuth()` が発火</td>
+            <td data-label="裏側">
               <span class="badge badge-file">frontend/app/layout.tsx</span> 内の
               <code>AuthProvider</code> が <code>localStorage.currentUser</code> を確認
             </td>
           </tr>
           <tr>
-            <td>ログイン済みの場合</td>
-            <td><span class="badge badge-state">router.push('/dashboard')</span> でリダイレクト</td>
+            <td data-label="操作">ログイン済みの場合</td>
+            <td data-label="裏側"><span class="badge badge-state">router.push('/dashboard')</span> でリダイレクト</td>
           </tr>
           <tr>
-            <td>未ログインの場合</td>
-            <td>ヒーロー UI をそのまま描画</td>
+            <td data-label="操作">未ログインの場合</td>
+            <td data-label="裏側">ヒーロー UI をそのまま描画</td>
           </tr>
         </table>
         <p><span class="badge badge-command">curl -I http://localhost:3000/</span></p>
@@ -129,41 +129,41 @@ rails s -p 3002</pre>
 
       <section id="step3">
         <h2>3. プロフィール編集</h2>
-        <table>
+        <table class="responsive-table">
           <tr>
-            <th>Step</th>
-            <th>フロント</th>
-            <th>サーバー</th>
+            <th scope="col">Step</th>
+            <th scope="col">フロント</th>
+            <th scope="col">サーバー</th>
           </tr>
           <tr>
-            <td>/profile 表示</td>
-            <td><code>useEffect</code> で `currentUser` をチェックし未ログインなら `/login`</td>
-            <td>—</td>
+            <td data-label="Step">/profile 表示</td>
+            <td data-label="フロント"><code>useEffect</code> で `currentUser` をチェックし未ログインなら `/login`</td>
+            <td data-label="サーバー">—</td>
           </tr>
           <tr>
-            <td>プロフィール取得</td>
-            <td><span class="badge badge-state">fetchProfile()</span> → `GET /users/me`</td>
-            <td><code>UsersController#show</code></td>
+            <td data-label="Step">プロフィール取得</td>
+            <td data-label="フロント"><span class="badge badge-state">fetchProfile()</span> → `GET /users/me`</td>
+            <td data-label="サーバー"><code>UsersController#show</code></td>
           </tr>
           <tr>
-            <td>入力編集</td>
-            <td><span class="badge badge-state">setNickname/setBio/setPreviewUrl</span></td>
-            <td>—</td>
+            <td data-label="Step">入力編集</td>
+            <td data-label="フロント"><span class="badge badge-state">setNickname/setBio/setPreviewUrl</span></td>
+            <td data-label="サーバー">—</td>
           </tr>
           <tr>
-            <td>画像選択</td>
-            <td><span class="badge badge-state">handleFileChange</span> が validation</td>
-            <td>—</td>
+            <td data-label="Step">画像選択</td>
+            <td data-label="フロント"><span class="badge badge-state">handleFileChange</span> が validation</td>
+            <td data-label="サーバー">—</td>
           </tr>
           <tr>
-            <td>保存</td>
-            <td><span class="badge badge-state">handleSubmit</span> → FormData で送信</td>
-            <td>`PUT /users/me`</td>
+            <td data-label="Step">保存</td>
+            <td data-label="フロント"><span class="badge badge-state">handleSubmit</span> → FormData で送信</td>
+            <td data-label="サーバー">`PUT /users/me`</td>
           </tr>
           <tr>
-            <td>成功</td>
-            <td><code>localStorage.currentUser</code> 更新 + Toast</td>
-            <td><code>UsersController#update</code></td>
+            <td data-label="Step">成功</td>
+            <td data-label="フロント"><code>localStorage.currentUser</code> 更新 + Toast</td>
+            <td data-label="サーバー"><code>UsersController#update</code></td>
           </tr>
         </table>
         <div class="omake">
@@ -236,13 +236,31 @@ rails s -p 3002</pre>
 
       <section id="step6">
         <h2>6. 夢の検索（企業）</h2>
-        <table>
-          <tr><th>操作</th><th>処理</th></tr>
-          <tr><td>カテゴリ選択</td><td><span class="badge badge-state">setSelectedCategory(4)</span></td></tr>
-          <tr><td>自動検索</td><td><span class="badge badge-state">fetchDreams({category_id:4})</span></td></tr>
-          <tr><td>API</td><td><span class="badge badge-state">dreamsApi.getDreams</span> → `GET /dreams?category_id=4`</td></tr>
-          <tr><td>表示</td><td><span class="badge badge-state">setDreams(response.data)</span></td></tr>
-          <tr><td>備考</td><td>キーワード検索は既知の不具合 → カテゴリで回避</td></tr>
+        <table class="responsive-table">
+          <tr>
+            <th scope="col">操作</th>
+            <th scope="col">処理</th>
+          </tr>
+          <tr>
+            <td data-label="操作">カテゴリ選択</td>
+            <td data-label="処理"><span class="badge badge-state">setSelectedCategory(4)</span></td>
+          </tr>
+          <tr>
+            <td data-label="操作">自動検索</td>
+            <td data-label="処理"><span class="badge badge-state">fetchDreams({category_id:4})</span></td>
+          </tr>
+          <tr>
+            <td data-label="操作">API</td>
+            <td data-label="処理"><span class="badge badge-state">dreamsApi.getDreams</span> → `GET /dreams?category_id=4`</td>
+          </tr>
+          <tr>
+            <td data-label="操作">表示</td>
+            <td data-label="処理"><span class="badge badge-state">setDreams(response.data)</span></td>
+          </tr>
+          <tr>
+            <td data-label="操作">備考</td>
+            <td data-label="処理">キーワード検索は既知の不具合 → カテゴリで回避</td>
+          </tr>
         </table>
         <div class="hero">
           <p><strong>詳しい動き:</strong></p>

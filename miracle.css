@@ -132,6 +132,11 @@ table {
   margin: 16px 0;
 }
 
+.responsive-table {
+  border-radius: 14px;
+  overflow: hidden;
+}
+
 th, td {
   border: 1px solid var(--border);
   padding: 10px 12px;
@@ -231,15 +236,50 @@ th, td {
     display: inline;
   }
 
-  table {
+  .responsive-table {
     display: block;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
+    border: none;
   }
 
-  th,
-  td {
-    min-width: 140px;
+  .responsive-table thead {
+    display: none;
+  }
+
+  .responsive-table tbody,
+  .responsive-table tr,
+  .responsive-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .responsive-table tr {
+    margin-bottom: 16px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 6px 0;
+    background: var(--card-bg);
+  }
+
+  .responsive-table td {
+    border: none;
+    border-bottom: 1px solid var(--border);
+    padding: 12px 16px 12px 130px;
+    position: relative;
+    font-size: 0.95em;
+  }
+
+  .responsive-table td:last-child {
+    border-bottom: none;
+  }
+
+  .responsive-table td::before {
+    content: attr(data-label);
+    position: absolute;
+    left: 16px;
+    top: 12px;
+    font-weight: 600;
+    color: #64748b;
+    width: 100px;
   }
 
   .toc ul {
