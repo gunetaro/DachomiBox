@@ -1,0 +1,24 @@
+<svg width="320" height="220" viewBox="0 0 320 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="miracle-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#312e81"/>
+      <stop offset="100%" stop-color="#1e3a8a"/>
+    </linearGradient>
+    <linearGradient id="miracle-card" x1="0%" y1="0%" x2="120%" y2="120%">
+      <stop offset="0%" stop-color="#f1f5f9"/>
+      <stop offset="100%" stop-color="#c7d2fe"/>
+    </linearGradient>
+  </defs>
+  <rect width="320" height="220" rx="24" fill="#020617"/>
+  <rect x="10" y="10" width="300" height="200" rx="20" fill="url(#miracle-bg)"/>
+  <rect x="40" y="46" width="240" height="132" rx="18" fill="url(#miracle-card)"/>
+  <rect x="58" y="70" width="64" height="64" rx="12" fill="#1d4ed8" opacity="0.2"/>
+  <path d="M72 94L92 110L72 126" stroke="#1d4ed8" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" opacity="0.7"/>
+  <rect x="142" y="76" width="110" height="16" rx="8" fill="#1d4ed8" opacity="0.45"/>
+  <rect x="142" y="108" width="96" height="12" rx="6" fill="#7c3aed" opacity="0.45"/>
+  <rect x="142" y="136" width="78" height="12" rx="6" fill="#22d3ee" opacity="0.45"/>
+  <circle cx="242" cy="64" r="10" fill="#22d3ee" opacity="0.7"/>
+  <circle cx="86" cy="174" r="8" fill="#c084fc" opacity="0.7"/>
+  <circle cx="230" cy="180" r="6" fill="#a855f7" opacity="0.7"/>
+  <text x="160" y="202" text-anchor="middle" fill="#e2e8f0" font-size="14" font-family="'Inter','Noto Sans JP',system-ui">操作実況 / State Map</text>
+</svg>

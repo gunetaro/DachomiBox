@@ -1,0 +1,40 @@
+<svg width="640" height="320" viewBox="0 0 640 320" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1d4ed8" stop-opacity="0.9"/>
+      <stop offset="50%" stop-color="#7c3aed" stop-opacity="0.85"/>
+      <stop offset="100%" stop-color="#14b8a6" stop-opacity="0.85"/>
+    </linearGradient>
+    <linearGradient id="card" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f8fafc" stop-opacity="0.75"/>
+      <stop offset="100%" stop-color="#cbd5f5" stop-opacity="0.45"/>
+    </linearGradient>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="24" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <rect width="640" height="320" rx="32" fill="#020617"/>
+  <rect x="16" y="16" width="608" height="288" rx="28" fill="#0f172a"/>
+  <rect x="32" y="32" width="576" height="256" rx="26" fill="url(#bg)" filter="url(#glow)" opacity="0.7"/>
+  <g stroke="#94a3b8" stroke-opacity="0.25" stroke-width="1">
+    <path d="M80 60L560 60"/><path d="M80 120L560 120"/><path d="M80 180L560 180"/><path d="M80 240L560 240"/>
+    <path d="M140 40L140 280"/><path d="M260 40L260 280"/><path d="M380 40L380 280"/><path d="M500 40L500 280"/>
+  </g>
+  <rect x="120" y="96" width="200" height="148" rx="20" fill="url(#card)" stroke="#e0e7ff" stroke-opacity="0.5"/>
+  <rect x="332" y="112" width="188" height="120" rx="18" fill="#0f172a" stroke="#bae6fd" stroke-opacity="0.6"/>
+  <circle cx="220" cy="170" r="34" fill="#1d4ed8" opacity="0.28"/>
+  <path d="M212 142L238 170L212 198" stroke="#0f172a" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" opacity="0.8"/>
+  <rect x="156" y="120" width="128" height="16" rx="8" fill="#c4b5fd" opacity="0.4"/>
+  <rect x="156" y="210" width="88" height="12" rx="6" fill="#7dd3fc" opacity="0.4"/>
+  <rect x="364" y="140" width="124" height="20" rx="10" fill="#38bdf8" opacity="0.5"/>
+  <rect x="364" y="188" width="92" height="14" rx="7" fill="#c084fc" opacity="0.4"/>
+  <circle cx="420" cy="174" r="48" stroke="#bae6fd" stroke-width="1.5" stroke-dasharray="8 12" opacity="0.7"/>
+  <path d="M396 180C410 154 448 158 460 190" stroke="#f8fafc" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="396" cy="180" r="6" fill="#34d399"/>
+  <circle cx="460" cy="190" r="6" fill="#38bdf8"/>
+  <text x="320" y="290" text-anchor="middle" fill="#e2e8f0" font-size="16" font-family="'Inter', 'Noto Sans JP', system-ui" opacity="0.8">MIRACLE / ULTRA TECHNICAL DOCS</text>
+</svg>
