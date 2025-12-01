@@ -104,12 +104,21 @@ pre {
   padding: 12px 16px;
   margin: 12px 0;
   overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .code-stack pre {
   background: transparent;
   border: none;
   padding: 0;
+}
+
+.code-stack,
+code {
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 table {
@@ -181,4 +190,60 @@ th, td {
 .toc a {
   color: var(--accent);
   text-decoration: none;
+}
+
+@media (max-width: 720px) {
+  main {
+    padding: 32px 16px 48px;
+  }
+
+  header {
+    padding: 20px 0;
+  }
+
+  section {
+    padding: 18px;
+    margin-bottom: 24px;
+  }
+
+  .hero {
+    padding: 16px;
+  }
+
+  .badge-outline,
+  .badge-command,
+  .badge-file,
+  .badge-state,
+  code {
+    display: inline;
+  }
+
+  table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  th,
+  td {
+    min-width: 140px;
+  }
+
+  .toc ul {
+    columns: 1;
+  }
+
+  .cta-buttons {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .cta-buttons a {
+    width: 100%;
+  }
+
+  body {
+    font-size: 15px;
+  }
 }
