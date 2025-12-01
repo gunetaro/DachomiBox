@@ -65,6 +65,7 @@ section {
 .badge {
   font-weight: 600;
   margin-right: 4px;
+  line-height: 1.5;
 }
 
 .badge-outline,
@@ -75,6 +76,10 @@ section {
   border-radius: 6px;
   padding: 2px 8px;
   display: inline-block;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .badge-command {
@@ -168,6 +173,14 @@ th, td {
   border-radius: 12px;
   padding: 12px 16px;
   margin: 16px 0;
+}
+
+.hero,
+.highlight,
+.omake,
+.code-stack {
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .tech-badge {
